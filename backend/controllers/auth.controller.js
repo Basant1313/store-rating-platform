@@ -5,14 +5,29 @@ import pool from '../db.js';
 
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password, address, role } = req.body;
-
+    const { name, email, password, address} = req.body;
+    // Force role to be 'user'. Admins and store_owners must be created by existing admins.
+     const role = 'user'; // Force role to be 'user'
     // Validation
-    if (!name || name.length < 20 || name.length > 60)
-      return res.status(400).json({ error: 'Name must be 20-60 characters' });
+   if (!name || name.length < 20 || name.length > 60)
+  return res.status(400).json({ error: 'Name must be 20-60 characters' });
 
-    if (address && address.length > 400)
-      return res.status(400).json({ error: 'Address too long' });
+  if (!email)
+  return res.status(400).json({ error: 'Email is required' });
+
+  if (!password)
+  return res.status(400).json({ error: 'Password is required' });
+
+  if (!address || address.trim() === '')
+  return res.status(400).json({ error: 'Address is required' });
+
+  if (address.length > 400)
+  return res.status(400).json({ error: 'Address too long' });
+
+
+    if (req.body.role && req.body.role !== 'user') {
+        return res.status(403).json({ error: 'You cannot set your own role' });
+      }
 
     const passwordRegex = /^(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,16}$/;
     if (!passwordRegex.test(password))

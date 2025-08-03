@@ -1,6 +1,10 @@
 import adminRoutes from './routes/admin.routes.js';
-
-import express from 'express';import cors from 'cors';
+import ratingRoutes from './routes/rating.routes.js';
+import storeRoutes from './routes/store.routes.js';
+import ownerRoutes from './routes/owner.routes.js';
+import userRoutes from './routes/user.routes.js'; 
+import express from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
@@ -29,5 +33,14 @@ app.use('/api/auth', authRoutes);
 app.use(errorHandler);
 
 app.use('/api/admin', adminRoutes);
+
+app.use('/api/rate', ratingRoutes);
+
+
+app.use('/api/store', storeRoutes);
+
+app.use('/api/owner', ownerRoutes);
+
+app.use('/api/users', userRoutes);
 
 export default app;
