@@ -115,3 +115,25 @@ Login to get JWT token.
 Set header: Authorization: Bearer <token>.
 
 Access protected/admin routes.
+
+
+## 🚀 Features
+
+### 👤 Users
+- View and search stores
+- Rate and update ratings
+- Change their password
+
+### 🛠 Admin
+- Dashboard with analytics (Users, Stores, Ratings count)
+- Add and manage normal/admin users
+- Add and manage stores
+- Filter user and store listings
+- Logout functionality
+
+### 🧑‍💼 Store Owners
+- Login and view their store's average rating
+- View users who rated their store
+- Change their password
+
+
