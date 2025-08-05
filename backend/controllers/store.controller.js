@@ -49,6 +49,39 @@ export const getStoreDashboard = async (req, res, next) => {
 };
 
 
+// export const getAllStoresWithUserRating = async (req, res, next) => {
+//   try {
+//     const userId = req.user.id;
+
+//     const result = await pool.query(
+//       `
+//       SELECT 
+//         s.id,
+//         s.name,
+//         s.address,
+//         COALESCE(ROUND(AVG(r.rating), 2), 0) AS average_rating,
+//         COALESCE(
+//           (
+//             SELECT rating FROM ratings 
+//             WHERE ratings.user_id = $1 AND ratings.store_id = s.id
+//           ), 
+//           NULL
+//         ) AS user_rating
+//       FROM stores s
+//       LEFT JOIN ratings r ON s.id = r.store_id
+//       GROUP BY s.id
+//       ORDER BY s.name
+//       `,
+//       [userId]
+//     );
+
+//     res.json(result.rows);
+//   } catch (err) {
+//     next(err);
+//   }
+// };
+
+
 export const getAllStoresWithUserRating = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -56,20 +89,20 @@ export const getAllStoresWithUserRating = async (req, res, next) => {
     const result = await pool.query(
       `
       SELECT 
-        s.id,
+        s.id AS store_id,
         s.name,
         s.address,
-        COALESCE(ROUND(AVG(r.rating), 2), 0) AS average_rating,
+        COALESCE(ROUND(AVG(r.rating), 2), 0) AS averageRating,
         COALESCE(
           (
             SELECT rating FROM ratings 
             WHERE ratings.user_id = $1 AND ratings.store_id = s.id
           ), 
           NULL
-        ) AS user_rating
+        ) AS userRating
       FROM stores s
       LEFT JOIN ratings r ON s.id = r.store_id
-      GROUP BY s.id
+      GROUP BY s.id, s.name, s.address
       ORDER BY s.name
       `,
       [userId]
@@ -80,6 +113,7 @@ export const getAllStoresWithUserRating = async (req, res, next) => {
     next(err);
   }
 };
+
 
 
 export const getFilteredStores = async (req, res, next) => {

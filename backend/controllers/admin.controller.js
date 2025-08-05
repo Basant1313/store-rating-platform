@@ -58,9 +58,16 @@ export const createStore = async (req, res, next) => {
     if (!owner_id)
       return res.status(400).json({ error: 'Owner ID is required' });
 
-    // Optional: Validate email format if email is provided
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return res.status(400).json({ error: 'Invalid email format' });
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    
+    const trimmedEmail = email.trim();
+if (!emailRegex.test(trimmedEmail)) {
+  return res.status(400).json({ error: "Invalid email format" });
+}
+
 
     // Check if owner exists and is a store_owner
     const ownerCheck = await pool.query(
@@ -110,16 +117,40 @@ export const getDashboardStats = async (req, res) => {
 
 export const getAllStoresWithRatings = async (req, res, next) => {
   try {
-    const result = await pool.query(`
+    const { name, email } = req.query;
+
+    let query = `
       SELECT 
-        s.id, s.name, s.email, s.address,
+        s.id,
+        s.name AS store_name,
+        s.address,
+        u.email AS owner_email,
         COALESCE(ROUND(AVG(r.rating), 2), 0) AS average_rating
       FROM stores s
-      LEFT JOIN ratings r ON s.id = r.store_id
-      GROUP BY s.id
-      ORDER BY s.name
-    `);
+      JOIN users u ON s.owner_id = u.id
+      LEFT JOIN ratings r ON r.store_id = s.id
+      WHERE 1=1
+    `;
 
+    const values = [];
+    let count = 1;
+
+    if (name) {
+      query += ` AND s.name ILIKE $${count++}`;
+      values.push(`%${name}%`);
+    }
+
+    if (email) {
+      query += ` AND u.email ILIKE $${count++}`;
+      values.push(`%${email}%`);
+    }
+
+    query += `
+      GROUP BY s.id, u.email
+      ORDER BY s.id DESC
+    `;
+
+    const result = await pool.query(query, values);
     res.json(result.rows);
   } catch (err) {
     next(err);
@@ -128,31 +159,48 @@ export const getAllStoresWithRatings = async (req, res, next) => {
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { name, email, address, role} = req.query; 
+    const { name, email, address, role } = req.query;
 
-    let query = 'SELECT id, name, email, address, role FROM users WHERE 1=1';
+    let query = `
+      SELECT 
+        u.id, 
+        u.name, 
+        u.email, 
+        u.address, 
+        u.role,
+        CASE 
+          WHEN u.role = 'store_owner' THEN r.avg_rating 
+          ELSE NULL 
+        END AS rating
+      FROM users u
+      LEFT JOIN (
+        SELECT s.owner_id, ROUND(AVG(rt.rating), 1) AS avg_rating
+        FROM stores s
+        JOIN ratings rt ON rt.store_id = s.id
+        GROUP BY s.owner_id
+      ) r ON u.id = r.owner_id
+      WHERE 1=1
+    `;
+
     const values = [];
     let count = 1;
 
     if (name) {
-      query += ` AND name ILIKE $${count++}`;
+      query += ` AND u.name ILIKE $${count++}`;
       values.push(`%${name}%`);
     }
     if (email) {
-      query += ` AND email ILIKE $${count++}`;
+      query += ` AND u.email ILIKE $${count++}`;
       values.push(`%${email}%`);
     }
     if (address) {
-      query += ` AND address ILIKE $${count++}`;
+      query += ` AND u.address ILIKE $${count++}`;
       values.push(`%${address}%`);
     }
     if (role) {
-      query += ` AND LOWER(role) = LOWER($${count++})`;
+      query += ` AND LOWER(u.role) = LOWER($${count++})`;
       values.push(role);
     }
-
-    // console.log('Final SQL Query:', query);
-    // console.log('Query Parameters:', values);
 
     const result = await pool.query(query, values);
     res.json(result.rows);
